@@ -115,6 +115,7 @@ const initPeer = (peer: Peer.Instance) => {
   })
   peer.on('data', onReceiveData)
   peer.on('connect', () => {
+    isJoiningSession.value = false
     isReady.value = true
   })
   peer.on('close', () => {
@@ -180,6 +181,7 @@ const initTricklePeer = (peer: Peer.Instance, isInitiator: boolean) => {
   })
   peer.on('data', onReceiveData)
   peer.on('connect', () => {
+    isJoiningSession.value = false
     isReady.value = true
   })
   peer.on('close', () => {
@@ -238,6 +240,8 @@ const receivedFilename = ref('')
 const uploadedFilename = ref('')
 const sendingProgress = ref(0)
 const receivingProgress = ref(0)
+const isJoiningSession = ref(false)
+const isCreatingSession = ref(false)
 
 watch(signalServerUrl, (value) => {
   localStorage.setItem('signalServerUrl', value)
@@ -364,6 +368,7 @@ const resetPeer = () => {
   remoteDescription.value = ''
 }
 const onNewSession = async () => {
+  isCreatingSession.value = true
   resetPeer()
   peer = createPeer(true)
   await waitUntil(() => (localDescription.value ? true : false))
@@ -383,6 +388,7 @@ const onNewSession = async () => {
   if (content.ok) {
     sessionId.value = content.id
   }
+  isCreatingSession.value = false
 
   await waitUntil(() => {
     onUpdateSession()
@@ -390,6 +396,7 @@ const onNewSession = async () => {
   }, 500)
 }
 const onJoinSession = async () => {
+  isJoiningSession.value = true
   resetPeer()
   peer = createPeer(false)
 
@@ -443,12 +450,14 @@ const onUpdateSession = async () => {
 }
 
 const onNewTrickleSession = async () => {
+  isCreatingSession.value = true
   resetPeer()
 
   const content = await neofetch('/trickle/new-session', {})
 
   if (content.ok) {
     sessionId.value = content.id
+    isCreatingSession.value = false
     peer = createTricklePeer(true)
 
     await waitUntil(() => {
@@ -464,6 +473,7 @@ const onNewTrickleSession = async () => {
   }
 }
 const onJoinTrickleSession = async () => {
+  isJoiningSession.value = true
   resetPeer()
 
   peer = createTricklePeer(false)
@@ -478,6 +488,14 @@ const onJoinTrickleSession = async () => {
     })
     return isReady.value
   }, 500)
+}
+const onDiscardSession = async () => {
+  await neofetch(
+    isTrickle.value ? '/trickle/delete-session' : '/delete-session',
+    {
+      id: sessionId.value,
+    }
+  )
 }
 </script>
 
@@ -515,17 +533,20 @@ const onJoinTrickleSession = async () => {
       </BaseCard>
       <div class="flex flex-col justify-between">
         <BaseButton
-          @click="isTrickle ? onNewTrickleSession() : onNewSession"
+          @click="isTrickle ? onNewTrickleSession() : onNewSession()"
+          :disabled="isCreatingSession"
           class="py-3 px-6 shadow rounded-xl font-light"
         >
-          New Session
+          {{ isCreatingSession ? 'Creating' : 'New Session' }}
         </BaseButton>
         <BaseButton
           @click="isTrickle ? onJoinTrickleSession() : onJoinSession()"
-          :disabled="sessionId ? sessionId.length !== 4 : true"
+          :disabled="
+            (sessionId ? sessionId.length !== 4 : true) || isJoiningSession
+          "
           class="py-3 px-6 shadow rounded-xl font-light"
         >
-          Join Session
+          {{ isJoiningSession ? 'Joining' : 'Join Session' }}
         </BaseButton>
       </div>
     </section>
@@ -551,6 +572,7 @@ const onJoinTrickleSession = async () => {
       <BaseButton @click="isConnected ? onDisconnectClick() : onConnectClick()"
         >{{ isConnected ? 'Disconnect' : 'Connect' }}
       </BaseButton>
+      <BaseButton @click="onDiscardSession">Discard Session</BaseButton>
     </section>
     <section
       v-if="isReady"
@@ -567,7 +589,6 @@ const onJoinTrickleSession = async () => {
         :download="receivedFilename"
         ><BaseButton :disabled="!receivedFileUrl">Download File</BaseButton>
       </a>
-      <BaseButton>Discard Session</BaseButton>
     </section>
     <section class="mx-10">
       <p>
