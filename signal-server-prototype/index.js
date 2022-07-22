@@ -6,6 +6,8 @@ import rateLimit from "express-rate-limit";
 const MAX_SESSION_LENGTH = 128;
 const MAX_STRING_LENGTH = 0x1000;
 
+const portHttp = 9753;
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 900,
@@ -34,7 +36,6 @@ app.use(
     },
   })
 );
-const port = 9753;
 
 let sessions = [];
 let trickleSessions = [];
@@ -233,6 +234,6 @@ app.post("/get-invitee", (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Sever is listening on port ${port}`);
+app.listen(portHttp, () => {
+  console.log(`HTTP server is listening on port ${portHttp}`);
 });
