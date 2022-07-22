@@ -8,7 +8,7 @@ const MAX_STRING_LENGTH = 0x1000;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 600,
+  max: 900,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -16,9 +16,22 @@ const limiter = rateLimit({
 const app = express();
 app.use(limiter);
 app.use(express.json());
+
+const whitelist = [
+  "https://nasu.hopp.top",
+  "https://nasu.netlify.app",
+  // "http://localhost:5173",
+  // "http://localhost:4173",
+]
 app.use(
   cors({
-    origin: "*",
+    origin: (origin, callback) => {
+      if (whitelist.indexOf(origin) !== -1) {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
   })
 );
 const port = 9753;

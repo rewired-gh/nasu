@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import Peer from 'simple-peer'
 import { NewPeer } from './models/Peer'
 import { assert } from '@vue/compiler-core'
@@ -221,7 +221,11 @@ const createTricklePeer = (isInitiator: boolean) => {
   return peer
 }
 
-const baseUrl = ref('http://localhost:9753/')
+const storedSignalServerUrl = localStorage.getItem('signalServerUrl')
+
+const signalServerUrl = ref(
+  storedSignalServerUrl ? storedSignalServerUrl : 'http://localhost:9753/'
+)
 const sessionId = ref('')
 const localDescription = ref('')
 const remoteDescription = ref('')
@@ -234,6 +238,10 @@ const receivedFilename = ref('')
 const uploadedFilename = ref('')
 const sendingProgress = ref(0)
 const receivingProgress = ref(0)
+
+watch(signalServerUrl, (value) => {
+  localStorage.setItem('signalServerUrl', value)
+})
 
 let peer: SimplePeer.Instance
 
@@ -254,7 +262,7 @@ const waitUntil = async (condition: () => boolean, interval = 10) => {
 }
 
 const neofetch = async (path: string, body: Record<string, unknown>) => {
-  const response = await fetch(new URL(path, baseUrl.value), {
+  const response = await fetch(new URL(path, signalServerUrl.value), {
     method: 'POST',
     headers: [['Content-Type', 'application/json']],
     body: JSON.stringify(body),
@@ -452,7 +460,7 @@ const onNewTrickleSession = async () => {
         }
       })
       return isReady.value
-    }, 3000)
+    }, 500)
   }
 }
 const onJoinTrickleSession = async () => {
@@ -469,7 +477,7 @@ const onJoinTrickleSession = async () => {
       }
     })
     return isReady.value
-  }, 3000)
+  }, 500)
 }
 </script>
 
@@ -492,7 +500,7 @@ const onJoinTrickleSession = async () => {
     <section class="flex flex-wrap justify-center gap-4">
       <BaseCard label="Signal Server">
         <input
-          v-model="baseUrl"
+          v-model="signalServerUrl"
           type="text"
           class="text-lg focus:outline-none focus:ring border-b-2 border-slate-200 hover:border-green-300 focus:border-green-300 ease-in-out duration-200"
         />
