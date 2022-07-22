@@ -22,8 +22,8 @@ app.use(express.json());
 const whitelist = [
   "https://nasu.hopp.top",
   "https://nasu.netlify.app",
-  // "http://localhost:5173",
-  // "http://localhost:4173",
+  "http://localhost:5173",
+  "http://localhost:4173",
 ]
 app.use(
   cors({
@@ -146,7 +146,7 @@ app.post("/trickle/delete-session", (req, res) => {
 // server: session id
 app.post("/new-session", (req, res) => {
   console.log("\n/new-session: ");
-  if (!(res.body.inviter && stringLengthCheck(res.body.inviter))) return;
+  if (!(req.body.inviter && stringLengthCheck(req.body.inviter))) return;
   let id = null;
   do {
     id = gpc(4);
@@ -199,7 +199,7 @@ app.post("/get-inviter", (req, res) => {
 // client: session id, invitee description
 app.post("/set-invitee", (req, res) => {
   console.log("\n/set-invitee: ");
-  if (!(res.body.invitee && stringLengthCheck(res.body.invitee))) return;
+  if (!(req.body.invitee && stringLengthCheck(req.body.invitee))) return;
   const session = sessions.find((session) => session.id === req.body.id);
   if (session) {
     session.invitee = req.body.invitee;
