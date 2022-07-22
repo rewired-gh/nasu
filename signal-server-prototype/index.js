@@ -23,8 +23,8 @@ const whitelist = ["https://nasu.hopp.top", "https://nasu.netlify.app"];
 app.use(
   cors({
     origin: (origin, callback) => {
-      callback(null, true)
-      return
+      // callback(null, true)
+      // return
       if (whitelist.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
