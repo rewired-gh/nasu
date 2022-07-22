@@ -1,0 +1,6 @@
+anode_modules/
+temp/
+.DS_Store
+.idea
+coverage/
+
