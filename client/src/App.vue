@@ -13,6 +13,9 @@ const ARRAY_BUFFER_CHUNK_SIZE = 1024 * 256
 const RECEIVE_MAGIC_STRING = 'GWU8'
 const FINISH_MAGIC_STRING = 'tRa4'
 const PEER_READY_MAGIC_STRING = 'xtP9'
+const NETWORK_POLL_INTERVAL = 600
+const NETWORK_WAIT_TIMEOUT_INTERVAL = 120 * 1000
+const NETWORK_JOIN_TIMEOUT_INTERVAL = 60 * 1000
 
 interface Response {
   ok: boolean
@@ -268,14 +271,17 @@ const waitUntil = async (condition: () => boolean, interval = 10) => {
 }
 
 const neofetch = async (path: string, body: Record<string, unknown>) => {
-  const response = await fetch(new URL(path, signalServerUrl.value), {
-    method: 'POST',
-    headers: [['Content-Type', 'application/json']],
-    body: JSON.stringify(body),
-  })
-  const content: Response = await response.json()
-
-  return content
+  try {
+    const response = await fetch(new URL(path, signalServerUrl.value), {
+      method: 'POST',
+      headers: [['Content-Type', 'application/json']],
+      body: JSON.stringify(body),
+    })
+    const content: Response = await response.json()
+    return content
+  } catch (error) {
+    resetSession()
+  }
 }
 
 const onConnectClick = () => {
@@ -369,6 +375,11 @@ const resetPeer = () => {
   localDescription.value = ''
   remoteDescription.value = ''
 }
+const resetSession = () => {
+  sessionId.value = ''
+  isJoiningSession.value = false
+  isCreatingSession.value = false
+}
 const onNewSession = async () => {
   isCreatingSession.value = true
   resetPeer()
@@ -387,15 +398,20 @@ const onNewSession = async () => {
     inviter: localDescription.value,
   })
 
-  if (content.ok) {
+  if (content && content.ok) {
     sessionId.value = content.id
   }
   isCreatingSession.value = false
 
+  let timeoutWaitInvitee = false
+  setTimeout(() => {
+    timeoutWaitInvitee = true
+    resetSession()
+  }, NETWORK_WAIT_TIMEOUT_INTERVAL)
   await waitUntil(() => {
     onUpdateSession()
-    return isReady.value
-  }, 500)
+    return isReady.value || timeoutWaitInvitee
+  }, NETWORK_POLL_INTERVAL)
 }
 const onJoinSession = async () => {
   isJoiningSession.value = true
@@ -413,7 +429,7 @@ const onJoinSession = async () => {
     id: sessionId.value,
   })
 
-  if (content.ok) {
+  if (content && content.ok) {
     peer.signal(content.inviter)
 
     // await fetch(new URL('/set-invitee', baseUrl.value), {
@@ -442,6 +458,7 @@ const onUpdateSession = async () => {
   })
 
   if (
+    content &&
     content.ok &&
     content.invitee &&
     remoteDescription.value !== content.invitee
@@ -457,21 +474,26 @@ const onNewTrickleSession = async () => {
 
   const content = await neofetch('/trickle/new-session', {})
 
-  if (content.ok) {
+  if (content && content.ok) {
     sessionId.value = content.id
     isCreatingSession.value = false
     peer = createTricklePeer(true)
 
+    let timeoutWaitInvitee = false
+    setTimeout(() => {
+      timeoutWaitInvitee = true
+      resetSession()
+    }, NETWORK_WAIT_TIMEOUT_INTERVAL)
     await waitUntil(() => {
       neofetch('/trickle/get-invitee', {
         id: sessionId.value,
       }).then((content) => {
-        if (content.ok && content.invitee) {
+        if (content && content.ok && content.invitee) {
           peer.signal(content.invitee)
         }
       })
-      return isReady.value
-    }, 500)
+      return isReady.value || timeoutWaitInvitee
+    }, NETWORK_POLL_INTERVAL)
   }
 }
 const onJoinTrickleSession = async () => {
@@ -480,16 +502,21 @@ const onJoinTrickleSession = async () => {
 
   peer = createTricklePeer(false)
 
+  let timeoutWaitInviter = false
+  setTimeout(() => {
+    timeoutWaitInviter = true
+    resetSession()
+  }, NETWORK_JOIN_TIMEOUT_INTERVAL)
   await waitUntil(() => {
     neofetch('/trickle/get-inviter', {
       id: sessionId.value,
     }).then((content) => {
-      if (content.ok && content.inviter) {
+      if (content && content.ok && content.inviter) {
         peer.signal(content.inviter)
       }
     })
-    return isReady.value
-  }, 500)
+    return isReady.value || timeoutWaitInviter
+  }, NETWORK_POLL_INTERVAL)
 }
 const onDiscardSession = async () => {
   await neofetch(
