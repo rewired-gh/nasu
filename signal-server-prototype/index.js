@@ -10,7 +10,7 @@ const portHttp = 9753;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 900,
+  max: 9000,
   standardHeaders: true,
   legacyHeaders: false,
 });
