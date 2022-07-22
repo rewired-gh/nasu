@@ -108,7 +108,7 @@ const onReceiveData = (chunk: Buffer) => {
 }
 
 const initPeer = (peer: Peer.Instance) => {
-  peer._debug = console.log
+  // peer._debug = console.log
   peer.on('signal', (data) => {
     localDescription.value = JSON.stringify(data)
   })
@@ -162,7 +162,7 @@ const createPeer = (isInitiator: boolean) => {
 }
 
 const initTricklePeer = (peer: Peer.Instance, isInitiator: boolean) => {
-  peer._debug = console.log
+  // peer._debug = console.log
   peer.on('signal', async (data) => {
     localDescription.value = JSON.stringify(data)
     neofetch(
