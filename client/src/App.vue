@@ -115,6 +115,7 @@ const initPeer = (peer: Peer.Instance) => {
   peer.on('error', (error) => {
     console.error('simple-peer', error)
     onDisconnectClick()
+    resetSession()
   })
   peer.on('data', onReceiveData)
   peer.on('connect', () => {
