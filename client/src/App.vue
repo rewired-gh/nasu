@@ -130,7 +130,7 @@ const createPeer = (isInitiator: boolean) => {
   const peer = new Peer({
     initiator: isInitiator,
     trickle: false,
-    // allowHalfTrickle: true,
+    allowHalfTrickle: true,
     channelConfig: {
       ordered: true,
     },
