@@ -228,7 +228,7 @@ const storedSignalServerUrl = localStorage.getItem('signalServerUrl')
 const signalServerUrl = ref(
   storedSignalServerUrl
     ? storedSignalServerUrl
-    : 'https://nasu-signal.hopp.top:3773'
+    : 'https://nasu-signal.hopp.top:13773'
 )
 const sessionId = ref('')
 const localDescription = ref('')
