@@ -226,7 +226,9 @@ const createTricklePeer = (isInitiator: boolean) => {
 const storedSignalServerUrl = localStorage.getItem('signalServerUrl')
 
 const signalServerUrl = ref(
-  storedSignalServerUrl ? storedSignalServerUrl : 'http://localhost:9753/'
+  storedSignalServerUrl
+    ? storedSignalServerUrl
+    : 'https://nasu-signal.hopp.top:3773'
 )
 const sessionId = ref('')
 const localDescription = ref('')
