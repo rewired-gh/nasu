@@ -22,12 +22,12 @@ app.use(express.json());
 const whitelist = [
   "https://nasu.hopp.top",
   "https://nasu.netlify.app",
-  // "http://localhost:5173",
-  // "http://localhost:4173",
 ]
 app.use(
   cors({
     origin: (origin, callback) => {
+      // callback(null, true)
+      // return
       if (whitelist.indexOf(origin) !== -1) {
         callback(null, true)
       } else {
