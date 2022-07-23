@@ -2,15 +2,11 @@ import express from "express";
 import gpc from "generate-pincode";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-
-const MAX_SESSION_LENGTH = 128;
-const MAX_STRING_LENGTH = 0x1000;
-
-const portHttp = 9753;
+import config from "./config.js";
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 9000,
+  max: 1080,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -19,18 +15,9 @@ const app = express();
 app.use(limiter);
 app.use(express.json());
 
-const whitelist = ["https://nasu.hopp.top", "https://nasu.netlify.app"];
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // callback(null, true)
-      // return
-      if (whitelist.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: config.allowedOrigins,
   })
 );
 
@@ -38,15 +25,29 @@ let sessions = [];
 let trickleSessions = [];
 
 const stringLengthCheck = (str) => {
-  return str && str.length <= MAX_STRING_LENGTH;
+  return str && str.length <= config.maxStringLength;
 };
 
 const logClient = (req) => {
   console.log(
     `IP: ${req.headers["x-forwarded-for"] || req.socket.remoteAddress}`
   );
-  console.log(`User Agent: ${req.headers["user-agent"]}`)
+  console.log(`User Agent: ${req.headers["user-agent"]}`);
 };
+
+const findSession = (sessions, id) => {
+  for (let i = sessions.length - 1; i >= 0; i--) {
+    if (sessions[i].id === id) {
+      return sessions[i];
+    }
+  }
+  return null;
+};
+
+// deafult
+app.post("/", (_req, res) => {
+  res.status(418).send("I'm not a teapot.");
+});
 
 // server: session id
 app.post("/trickle/new-session", (req, res) => {
@@ -61,7 +62,7 @@ app.post("/trickle/new-session", (req, res) => {
     inviter: [],
     invitee: [],
   };
-  if (trickleSessions.length >= MAX_SESSION_LENGTH) {
+  if (trickleSessions.length >= config.maxSessionLength) {
     trickleSessions.shift();
   }
   trickleSessions.push(session);
@@ -77,7 +78,8 @@ app.post("/trickle/new-session", (req, res) => {
 app.post("/trickle/get-inviter", (req, res) => {
   console.log("\n/trickle/get-inviter: ");
   logClient(req);
-  const session = trickleSessions.find((session) => session.id === req.body.id);
+  const session = findSession(trickleSessions, req.body.id);
+  // const session = trickleSessions.find((session) => session.id === req.body.id);
   console.log(session);
   if (session && session.inviter.length > 0) {
     res.send({
@@ -97,7 +99,8 @@ app.post("/trickle/get-inviter", (req, res) => {
 app.post("/trickle/get-invitee", (req, res) => {
   console.log("\n/trickle/get-invitee: ");
   logClient(req);
-  const session = trickleSessions.find((session) => session.id === req.body.id);
+  const session = findSession(trickleSessions, req.body.id);
+  // const session = trickleSessions.find((session) => session.id === req.body.id);
   console.log(session);
   if (session && session.invitee.length > 0) {
     res.send({
@@ -116,7 +119,8 @@ app.post("/trickle/get-invitee", (req, res) => {
 app.post("/trickle/set", (req, res) => {
   console.log("\n/trickle/set-inviter: ");
   logClient(req);
-  const session = trickleSessions.find((session) => session.id === req.body.id);
+  const session = findSession(trickleSessions, req.body.id);
+  // const session = trickleSessions.find((session) => session.id === req.body.id);
   console.log(session);
   if (session) {
     if (req.body.inviter && stringLengthCheck(req.body.inviter)) {
@@ -166,7 +170,7 @@ app.post("/new-session", (req, res) => {
     inviter: req.body.inviter,
     invitee: null,
   };
-  if (sessions.length >= MAX_SESSION_LENGTH) {
+  if (sessions.length >= config.maxSessionLength) {
     sessions.shift();
   }
   sessions.push(session);
@@ -193,7 +197,8 @@ app.post("/delete-session", (req, res) => {
 app.post("/get-inviter", (req, res) => {
   console.log("\n/get-inviter: ");
   logClient(req);
-  const session = sessions.find((session) => session.id === req.body.id);
+  const session = findSession(sessions, req.body.id);
+  // const session = sessions.find((session) => session.id === req.body.id);
   console.log(session);
   if (session) {
     res.send({
@@ -213,7 +218,8 @@ app.post("/set-invitee", (req, res) => {
   console.log("\n/set-invitee: ");
   logClient(req);
   if (!(req.body.invitee && stringLengthCheck(req.body.invitee))) return;
-  const session = sessions.find((session) => session.id === req.body.id);
+  const session = findSession(sessions, req.body.id);
+  // const session = sessions.find((session) => session.id === req.body.id);
   if (session) {
     session.invitee = req.body.invitee;
     console.log(session);
@@ -233,7 +239,8 @@ app.post("/set-invitee", (req, res) => {
 app.post("/get-invitee", (req, res) => {
   console.log("\n/get-invitee: ");
   logClient(req);
-  const session = sessions.find((session) => session.id === req.body.id);
+  const session = findSession(sessions, req.body.id);
+  // const session = sessions.find((session) => session.id === req.body.id);
   console.log(session);
   if (session) {
     res.send({
@@ -248,6 +255,6 @@ app.post("/get-invitee", (req, res) => {
   }
 });
 
-app.listen(portHttp, () => {
-  console.log(`HTTP server is listening on port ${portHttp}`);
+app.listen(config.portHttp, () => {
+  console.log(`HTTP server is listening on port ${config.portHttp}`);
 });
