@@ -2,6 +2,8 @@
 
 A simplistic way for peer-to-peer file transfer.
 
+Feel free to suggest new features or report bugs in ['Issues'](https://github.com/h0gan1ee/nasu/issues).
+
 > Currently this project is under active development, and it hasn't reach stable state.
 
 ## Overview
