@@ -119,7 +119,7 @@ app.post("/trickle/get-invitee", (req, res) => {
 
 // client: session id, inviter description
 app.post("/trickle/set", (req, res) => {
-  console.log("/trickle/set-inviter: ");
+  console.log("/trickle/set: ");
 
   const session = findSession(trickleSessions, req.body.id);
   // const session = trickleSessions.find((session) => session.id === req.body.id);
