@@ -5,8 +5,7 @@ const config = {
   allowedOrigins: [
     "https://nasu.hopp.top",
     "https://nasu.netlify.app",
-    // "http://localhost:5173",
-    // "http://localhost:3000",
+    "https://dm.hopp.top",
   ],
 };
 
